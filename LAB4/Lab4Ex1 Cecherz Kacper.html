@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szablon Canvas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #9c9a9a;
+        }
+        #title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        #myCanvas {
+            border: 3px solid #000000;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div id="title">Lab4 Cecherz Kacper</div>
+    <canvas id="myCanvas" width="600" height="600"></canvas>
+
+    <script>
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+        var angle = 0; 
+        
+        function drawHendecagon(x, y, radius, color, rotation) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            let points = [];
+            for (let i = 0; i < 11; i++) {
+                let currentAngle = rotation + (i * 2 * Math.PI / 11);
+                let px = x + radius * Math.cos(currentAngle);
+                let py = y + radius * Math.sin(currentAngle);
+                points.push({px, py});
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.stroke(); 
+
+            
+            points.forEach(point => {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(point.px, point.py);
+                ctx.stroke();
+            });
+        }
+
+        
+        function drawTriangle(x, y, height, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - height / 2, y + height);
+            ctx.lineTo(x + height / 2, y + height);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        
+        function drawBeam(x, y, length, angleDeg) {
+            const angleRad = angleDeg * Math.PI / 180;
+            const dx = length / 2 * Math.cos(angleRad);
+            const dy = length / 2 * Math.sin(angleRad);
+            ctx.fillStyle = "red";
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angleRad);
+            ctx.fillRect(-length / 2, -5, length, 10);
+            ctx.restore();
+        }
+
+        
+        function drawSeesaw(x, y, beamLength, triangleHeight, triangleColor, angleDeg) {
+            drawTriangle(x, y - triangleHeight, triangleHeight, triangleColor);
+            drawBeam(x, y - triangleHeight, beamLength, angleDeg);
+            const angleRad = angleDeg * Math.PI / 180;
+            const halfLength = beamLength / 2;
+            const leftX = x - halfLength * Math.cos(angleRad);
+            const leftY = y - triangleHeight - halfLength * Math.sin(angleRad);
+            const rightX = x + halfLength * Math.cos(angleRad);
+            const rightY = y - triangleHeight + halfLength * Math.sin(angleRad);
+            drawHendecagon(leftX, leftY, 30, "black", angle);
+            drawHendecagon(rightX, rightY, 30, "black", angle);
+        }
+
+        
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawSeesaw(150, 250, 150, 100, "purple", 20); 
+            drawSeesaw(300, 400, 150, 100, "blue", 20);   
+            drawSeesaw(400, 250, 150, 100, "green", 20);  
+            angle += 0.01; 
+            requestAnimationFrame(animate);
+        }
+
+        
+        animate();
+    </script>
+</body>
+</html>

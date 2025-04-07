@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szablon Canvas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #9c9a9a;
+        }
+        #title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        #task {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        #myCanvas {
+            border: 3px solid #000000;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div id="title">Tytuł pracy</div>
+    <canvas id="myCanvas" width="600" height="600"></canvas>
+
+    <script>
+        document.getElementById("title").innerText = "Lab2Ex1 Kształt nr 7 Cecherz Kacper";
+
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+
+        
+        function drawEquilateralTriangle(x, y, size, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - size / 2, y - size * Math.sqrt(3) / 2);
+            ctx.lineTo(x + size / 2, y - size * Math.sqrt(3) / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function drawTrapezoid(x, y, topWidth, bottomWidth, height, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x - topWidth / 2, y);
+            ctx.lineTo(x + topWidth / 2, y);
+            ctx.lineTo(x + bottomWidth / 2, y + height);
+            ctx.lineTo(x - bottomWidth / 2, y + height);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function drawEye(x, y) {
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.arc(x + 5, y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(x + 4, y - 1, 1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawMouth(x, y) {
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.arc(x, y, 30, 0, Math.PI, false);
+            ctx.arc(x, y - 10, 30, Math.PI, 0, true);
+            ctx.fill();
+            ctx.fillStyle = "white";
+            ctx.fillRect(x - 6, y + 20, 4, 5);
+            ctx.fillStyle = "white";
+            ctx.fillRect(x, y + 20, 4, 5);
+        }
+
+        
+        const centerX = 300;
+        const centerY = 300;
+        const size = 150;
+
+        drawTrapezoid(centerX, centerY - 50, 80, size, 50, "violet");
+        drawEquilateralTriangle(centerX, centerY + 130, size, "violet");
+        drawEye(centerX - 20, centerY - 20);
+        drawEye(centerX + 20, centerY - 20);
+        drawMouth(centerX, centerY + 40);
+    </script>
+</body>
+</html>

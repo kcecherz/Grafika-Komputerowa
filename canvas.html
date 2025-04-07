@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szablon Canvas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #9c9a9a;
+        }
+        #title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        #task {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        #myCanvas {
+            border: 3px solid #000000;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div id="title">Tytuł pracy</div>
+    <canvas id="myCanvas" width="600" height="600"></canvas>
+
+    <script>
+        document.getElementById("title").innerText = "Moja Praca z Canvas";
+
+
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+    </script>
+</body>
+</html>

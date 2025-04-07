@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szablon Canvas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #9c9a9a;
+        }
+        #title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        #task {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        #myCanvas {
+            border: 3px solid #000000;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div id="title">Tytuł pracy</div>
+    <canvas id="myCanvas" width="600" height="600"></canvas>
+    <button id="clearCanvas">Wyczyść</button>
+    <select id="shapeSelector">
+        <option value="square">Kwadrat</option>
+        <option value="polygon">11-kąt</option>
+    </select>
+    <select id="colorSelector">
+        <option value="black">Czarny</option>
+        <option value="red">Czerwony</option>
+        <option value="blue">Niebieski</option>
+        <option value="yellow">Żółty</option>
+        <option value="green">Zielony</option>
+    </select>
+
+    <script>
+       
+        document.getElementById("title").innerText = "Lab2Ex2 Cecherz Kacper 11-kąt";
+
+  
+        const canvas = document.getElementById("myCanvas");
+        const ctx = canvas.getContext("2d");
+
+  
+        const clearButton = document.getElementById("clearCanvas");
+        const shapeSelector = document.getElementById("shapeSelector");
+        const colorSelector = document.getElementById("colorSelector");
+
+        let drawing = false;
+        let selectedColor = "black";
+        let selectedShape = "square";
+
+ 
+        function drawSquare(x, y) {
+            ctx.fillStyle = selectedColor;
+            ctx.fillRect(x - 10, y - 10, 20, 20);
+        }
+
+ 
+        function drawPolygon(x, y, sides = 11, size = 20) {
+            ctx.beginPath();
+            ctx.fillStyle = selectedColor;
+            for (let i = 0; i < sides; i++) {
+                let angle = (i * 2 * Math.PI) / sides;
+                let px = x + size * Math.cos(angle);
+                let py = y + size * Math.sin(angle);
+                if (i === 0) {
+                    ctx.moveTo(px, py);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+
+        canvas.addEventListener("mousedown", () => drawing = true);
+        canvas.addEventListener("mouseup", () => drawing = false);
+        canvas.addEventListener("mousemove", (event) => {
+            if (!drawing) return;
+            const x = event.offsetX;
+            const y = event.offsetY;
+            if (selectedShape === "square") {
+                drawSquare(x, y);
+            } else if (selectedShape === "polygon") {
+                drawPolygon(x, y);
+            }
+        });
+
+        clearButton.addEventListener("click", () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+
+        shapeSelector.addEventListener("change", (event) => {
+            selectedShape = event.target.value;
+        });
+
+        colorSelector.addEventListener("change", (event) => {
+            selectedColor = event.target.value;
+        });
+    </script>
+</body>
+</html>

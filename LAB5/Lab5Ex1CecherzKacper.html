@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szablon SVG</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #9c9a9a;
+        }
+        #title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        #mySVG {
+            border: 3px solid #000000;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div id="title">Lab4 Cecherz Kacper</div>
+    <svg id="mySVG" width="600" height="600">
+        <g id="drawingArea"></g>
+    </svg>
+
+    <script>
+        const svg = document.getElementById("mySVG");
+        const drawingArea = document.getElementById("drawingArea");
+        let angle = 0;
+
+        function drawHendecagon(x, y, radius, color, rotation) {
+            const points = [];
+            for (let i = 0; i < 11; i++) {
+                const currentAngle = rotation + (i * 2 * Math.PI / 11);
+                const px = x + radius * Math.cos(currentAngle);
+                const py = y + radius * Math.sin(currentAngle);
+                points.push({ px, py });
+            }
+
+            const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            polygon.setAttribute("points", points.map(p => `${p.px},${p.py}`).join(" "));
+            polygon.setAttribute("stroke", color);
+            polygon.setAttribute("stroke-width", "2");
+            polygon.setAttribute("fill", "none");
+            drawingArea.appendChild(polygon);
+
+            points.forEach(point => {
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", x);
+                line.setAttribute("y1", y);
+                line.setAttribute("x2", point.px);
+                line.setAttribute("y2", point.py);
+                line.setAttribute("stroke", color);
+                drawingArea.appendChild(line);
+            });
+        }
+
+        function drawTriangle(x, y, height, color) {
+            const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            polygon.setAttribute("points", `${x},${y} ${x - height / 2},${y + height} ${x + height / 2},${y + height}`);
+            polygon.setAttribute("fill", color);
+            drawingArea.appendChild(polygon);
+        }
+
+        function drawBeam(x, y, length, angleDeg) {
+            const angleRad = angleDeg * Math.PI / 180;
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            rect.setAttribute("x", x - length / 2 * Math.cos(angleRad));
+            rect.setAttribute("y", y - 5 - length / 2 * Math.sin(angleRad));
+            rect.setAttribute("width", length);
+            rect.setAttribute("height", 10);
+            rect.setAttribute("fill", "red");
+            rect.setAttribute("transform", `translate(${x},${y}) rotate(${angleDeg})`);
+            rect.setAttribute("transform-origin", "0 0");
+            drawingArea.appendChild(rect);
+        }
+
+        function drawSeesaw(x, y, beamLength, triangleHeight, triangleColor, angleDeg) {
+            drawTriangle(x, y - triangleHeight, triangleHeight, triangleColor);
+            const angleRad = angleDeg * Math.PI / 180;
+            const halfLength = beamLength / 2;
+            const leftX = x - halfLength * Math.cos(angleRad);
+            const leftY = y - triangleHeight - halfLength * Math.sin(angleRad);
+            const rightX = x + halfLength * Math.cos(angleRad);
+            const rightY = y - triangleHeight + halfLength * Math.sin(angleRad);
+            drawHendecagon(leftX, leftY, 30, "black", angle);
+            drawHendecagon(rightX, rightY, 30, "black", angle);
+            drawBeam(85, 75, beamLength, angleDeg);
+            drawBeam(210, 55,  beamLength, angleDeg);
+            drawBeam(170, 135, beamLength, angleDeg);
+        }
+
+        function animate() {
+            drawingArea.innerHTML = ""; 
+            drawSeesaw(150, 250, 150, 100, "purple", 20);
+            drawSeesaw(300, 400, 150, 100, "blue", 20);
+            drawSeesaw(400, 250, 150, 100, "green", 20);
+            angle += 0.01;
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
