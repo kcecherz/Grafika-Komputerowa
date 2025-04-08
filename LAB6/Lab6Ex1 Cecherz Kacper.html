@@ -40,14 +40,12 @@
     </p>
 
     <script>
-        // Pobierz canvas i kontekst WebGL
         const canvas = document.getElementById("myCanvas");
         const gl = canvas.getContext("webgl");
         if (!gl) {
             alert("WebGL nie jest wspierany w tej przeglądarce!");
         }
 
-        // Shaders
         const vertexShaderSource = `
             attribute vec3 aPosition;
             uniform mat4 uModelViewMatrix;
@@ -65,7 +63,6 @@
             }
         `;
 
-        // Funkcja do kompilacji shadera
         function createShader(gl, type, source) {
             const shader = gl.createShader(type);
             gl.shaderSource(shader, source);
@@ -78,7 +75,6 @@
             return shader;
         }
 
-        // Tworzenie programu WebGL
         const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
         const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
         const program = gl.createProgram();
@@ -90,13 +86,11 @@
         }
         gl.useProgram(program);
 
-        // Lokalizacje uniformów i atrybutów
         const positionLoc = gl.getAttribLocation(program, "aPosition");
         const modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix");
         const projectionMatrixLoc = gl.getUniformLocation(program, "uProjectionMatrix");
         const colorLoc = gl.getUniformLocation(program, "uColor");
 
-        // Macierze
         function createMatrix4() {
             return new Float32Array([
                 1, 0, 0, 0,
@@ -152,7 +146,6 @@
             ]);
         }
 
-        // Projekcja perspektywiczna
         function perspectiveMatrix(fov, aspect, near, far) {
             const f = 1.0 / Math.tan(fov * Math.PI / 360);
             const rangeInv = 1 / (near - far);
@@ -164,11 +157,9 @@
             ]);
         }
 
-        // Zmienne stanu
         let objectNumber = 1;
         let rotX = 0, rotY = 0, rotZ = 0;
 
-        // Dane wierzchołków
         let corkscrewVertices = [];
         let pyramidVertices = [];
         let pyramidIndices = [];
@@ -189,7 +180,7 @@
             const h = 1.0;
             const r = 0.8;
             pyramidVertices = [
-                0, 0, h - 0.5,  // Wierzchołek (apex)
+                0, 0, h - 0.5,
             ];
             for (let i = 0; i < N; i++) {
                 const x = r * Math.cos(2 * Math.PI * i / N);
@@ -210,7 +201,6 @@
         initCorkscrew();
         initPyramid();
 
-        // Bufory
         const corkscrewBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, corkscrewBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(corkscrewVertices), gl.STATIC_DRAW);
@@ -223,13 +213,11 @@
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pyramidIndexBuffer);
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(pyramidIndices), gl.STATIC_DRAW);
 
-        // Funkcja rysowania
         function drawScene() {
             gl.clearColor(0.94, 0.94, 0.94, 1.0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             gl.enable(gl.DEPTH_TEST);
 
-            // Macierze transformacji
             let modelViewMatrix = createMatrix4();
             modelViewMatrix = multiplyMatrix4(modelViewMatrix, rotateXMatrix(rotX));
             modelViewMatrix = multiplyMatrix4(modelViewMatrix, rotateYMatrix(rotY));
@@ -239,7 +227,7 @@
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, 1, 0,
-                0, 0, -5, 1  // Przesunięcie w osi Z
+                0, 0, -5, 1
             ]));
 
             gl.uniformMatrix4fv(modelViewMatrixLoc, false, modelViewMatrix);
@@ -248,24 +236,21 @@
             gl.enableVertexAttribArray(positionLoc);
 
             if (objectNumber === 1) {
-                // Korkociąg
                 gl.bindBuffer(gl.ARRAY_BUFFER, corkscrewBuffer);
                 gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 0, 0);
-                gl.uniform4fv(colorLoc, [0.0, 1.0, 0.0, 1.0]); // Zielony
+                gl.uniform4fv(colorLoc, [0.0, 1.0, 0.0, 1.0]);
                 gl.drawArrays(gl.LINE_STRIP, 0, corkscrewVertices.length / 3);
             } else if (objectNumber === 2) {
-                // Piramida
                 gl.bindBuffer(gl.ARRAY_BUFFER, pyramidVertexBuffer);
                 gl.vertexAttribPointer(positionLoc, 3, gl.FLOAT, false, 0, 0);
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pyramidIndexBuffer);
-                gl.uniform4fv(colorLoc, [0.5, 0.5, 0.5, 1.0]); // Szary
+                gl.uniform4fv(colorLoc, [0.5, 0.5, 0.5, 1.0]);
                 gl.drawElements(gl.TRIANGLES, pyramidIndices.length, gl.UNSIGNED_SHORT, 0);
             }
 
             gl.disableVertexAttribArray(positionLoc);
         }
 
-        // Obsługa klawiatury
         document.addEventListener("keydown", (event) => {
             switch (event.key) {
                 case "1":
@@ -299,7 +284,6 @@
             drawScene();
         });
 
-        // Inicjalizacja sceny
         drawScene();
     </script>
 </body>
