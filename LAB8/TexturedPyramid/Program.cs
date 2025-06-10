@@ -1,0 +1,310 @@
+﻿using System;
+using OpenTK;
+using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+
+namespace TexturedPyramid
+{
+    public class PyramidWindow : GameWindow
+    {
+        private int _vao, _vbo, _ebo;
+        private int _program;
+        private int _textureBrick, _textureEarth, _textureClouds;
+        private Matrix4 _view, _projection;
+        private float _rotationX, _rotationY;
+        private Vector2 _lastMousePos;
+        private int _currentTexture = 1;
+        private Vector3 _pyramidColor = new Vector3(0.0f, 0.0f, 0.0f);
+        private Vector3 _backgroundColor = new Vector3(0.1f, 0.1f, 0.1f);
+
+        private readonly float[] _vertices = {
+            -0.5f, 0.0f, -0.5f,  0.0f, 0.0f,
+             0.5f, 0.0f, -0.5f,  1.0f, 0.0f,
+             0.5f, 0.0f,  0.5f,  1.0f, 1.0f,
+            -0.5f, 0.0f,  0.5f,  0.0f, 1.0f,
+             0.0f, 1.0f,  0.0f,  0.5f, 0.5f
+        };
+
+        private readonly uint[] _indices = {
+            0, 1, 2,
+            2, 3, 0,
+            0, 1, 4,
+            1, 2, 4,
+            2, 3, 4,
+            3, 0, 4
+        };
+
+        public PyramidWindow(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
+            : base(gameWindowSettings, nativeWindowSettings)
+        {
+            MouseState.IsButtonDown(MouseButton.Left);
+        }
+
+        protected override void OnLoad()
+        {
+            base.OnLoad();
+            GL.ClearColor(_backgroundColor.X, _backgroundColor.Y, _backgroundColor.Z, 1.0f);
+
+            string vertexShaderSource = @"
+                #version 330 core
+                layout (location = 0) in vec3 aPos;
+                layout (location = 1) in vec2 aTexCoord;
+                out vec2 TexCoord;
+                uniform mat4 model;
+                uniform mat4 view;
+                uniform mat4 projection;
+                void main()
+                {
+                    gl_Position = projection * view * model * vec4(aPos, 1.0);
+                    TexCoord = aTexCoord;
+                }";
+
+            string fragmentShaderSource = @"
+                #version 330 core
+                out vec4 FragColor;
+                in vec2 TexCoord;
+                uniform sampler2D texture1;
+                uniform vec3 pyramidColor;
+                uniform bool useTexture;
+                void main()
+                {
+                    if (useTexture) {
+                        FragColor = texture(texture1, TexCoord);
+                    } else {
+                        FragColor = vec4(pyramidColor, 1.0);
+                    }
+                }";
+
+            int vertexShader = GL.CreateShader(ShaderType.VertexShader);
+            GL.ShaderSource(vertexShader, vertexShaderSource);
+            GL.CompileShader(vertexShader);
+            GL.GetShader(vertexShader, ShaderParameter.CompileStatus, out int success);
+            if (success == 0)
+            {
+                string infoLog = GL.GetShaderInfoLog(vertexShader);
+                Console.WriteLine($"Vertex Shader Error: {infoLog}");
+            }
+
+            int fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
+            GL.ShaderSource(fragmentShader, fragmentShaderSource);
+            GL.CompileShader(fragmentShader);
+            GL.GetShader(fragmentShader, ShaderParameter.CompileStatus, out success);
+            if (success == 0)
+            {
+                string infoLog = GL.GetShaderInfoLog(fragmentShader);
+                Console.WriteLine($"Fragment Shader Error: {infoLog}");
+            }
+
+            _program = GL.CreateProgram();
+            GL.AttachShader(_program, vertexShader);
+            GL.AttachShader(_program, fragmentShader);
+            GL.LinkProgram(_program);
+            GL.GetProgram(_program, GetProgramParameterName.LinkStatus, out success);
+            if (success == 0)
+            {
+                string infoLog = GL.GetProgramInfoLog(_program);
+                Console.WriteLine($"Program Link Error: {infoLog}");
+            }
+
+            GL.DeleteShader(vertexShader);
+            GL.DeleteShader(fragmentShader);
+
+            _vao = GL.GenVertexArray();
+            _vbo = GL.GenBuffer();
+            _ebo = GL.GenBuffer();
+
+            GL.BindVertexArray(_vao);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo);
+            GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
+
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _ebo);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
+
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
+            GL.EnableVertexAttribArray(1);
+
+            _textureBrick = LoadTexture("brick.jpg");
+            _textureEarth = LoadTexture("earth.jpg");
+            _textureClouds = LoadTexture("clouds.jpg");
+
+            _view = Matrix4.CreateTranslation(0.0f, 0.0f, -5.0f);
+            _projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45.0f), Size.X / (float)Size.Y, 0.1f, 100.0f);
+
+            GL.Enable(EnableCap.DepthTest);
+            CursorState = CursorState.Grabbed;
+        }
+
+        private int LoadTexture(string path)
+        {
+            if (!File.Exists(path))
+            {
+                Console.WriteLine($"Error: Texture file {path} not found.");
+                return -1;
+            }
+
+            int textureID = GL.GenTexture();
+            GL.BindTexture(TextureTarget.Texture2D, textureID);
+
+            try
+            {
+                using (var image = new Bitmap(path))
+                {
+                    BitmapData data = image.LockBits(
+                        new Rectangle(0, 0, image.Width, image.Height),
+                        ImageLockMode.ReadOnly,
+                        System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, image.Width, image.Height, 0,
+                        OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+
+                    image.UnlockBits(data);
+                }
+
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading texture {path}: {ex.Message}");
+                GL.DeleteTexture(textureID);
+                return -1;
+            }
+
+            return textureID;
+        }
+
+        protected override void OnRenderFrame(FrameEventArgs args)
+        {
+            base.OnRenderFrame(args);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            GL.ClearColor(_backgroundColor.X, _backgroundColor.Y, _backgroundColor.Z, 1.0f);
+
+            GL.Viewport(0, 0, Size.X, Size.Y);
+
+            GL.UseProgram(_program);
+
+            var model = Matrix4.CreateRotationY(_rotationY) * Matrix4.CreateRotationX(_rotationX);
+            int modelLoc = GL.GetUniformLocation(_program, "model");
+            int viewLoc = GL.GetUniformLocation(_program, "view");
+            int projLoc = GL.GetUniformLocation(_program, "projection");
+            GL.UniformMatrix4(modelLoc, false, ref model);
+            GL.UniformMatrix4(viewLoc, false, ref _view);
+            GL.UniformMatrix4(projLoc, false, ref _projection);
+
+            int colorLoc = GL.GetUniformLocation(_program, "pyramidColor");
+            int useTextureLoc = GL.GetUniformLocation(_program, "useTexture");
+            GL.Uniform3(colorLoc, _pyramidColor.X, _pyramidColor.Y, _pyramidColor.Z);
+            GL.Uniform1(useTextureLoc, _currentTexture > 0 ? 1 : 0);
+
+            GL.BindVertexArray(_vao);
+
+            if (_currentTexture > 0)
+            {
+                int currentTexture = -1;
+                switch (_currentTexture)
+                {
+                    case 1: currentTexture = _textureBrick; break;
+                    case 2: currentTexture = _textureEarth; break;
+                    case 3: currentTexture = _textureClouds; break;
+                }
+
+                if (currentTexture != -1)
+                {
+                    GL.ActiveTexture(TextureUnit.Texture0);
+                    GL.BindTexture(TextureTarget.Texture2D, currentTexture);
+                    GL.Uniform1(GL.GetUniformLocation(_program, "texture1"), 0);
+                }
+            }
+
+            GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            SwapBuffers();
+        }
+
+        protected override void OnUpdateFrame(FrameEventArgs args)
+        {
+            base.OnUpdateFrame(args);
+
+            if (MouseState.IsButtonDown(MouseButton.Left))
+            {
+                Vector2 currentMousePos = new Vector2(MouseState.X, MouseState.Y);
+                if (_lastMousePos != Vector2.Zero)
+                {
+                    Vector2 delta = currentMousePos - _lastMousePos;
+                    _rotationY += delta.X * 0.005f;
+                    _rotationX += delta.Y * 0.005f;
+                    _rotationX = Math.Clamp(_rotationX, -MathHelper.PiOver2, MathHelper.PiOver2);
+                }
+                _lastMousePos = currentMousePos;
+            }
+            else
+            {
+                _lastMousePos = Vector2.Zero;
+            }
+
+            if (KeyboardState.IsKeyPressed(Keys.D1)) _currentTexture = 1;
+            if (KeyboardState.IsKeyPressed(Keys.D2)) _currentTexture = 2;
+            if (KeyboardState.IsKeyPressed(Keys.D3)) _currentTexture = 3;
+
+            if (KeyboardState.IsKeyPressed(Keys.R))
+            {
+                _currentTexture = 0;
+                _pyramidColor = new Vector3(1.0f, 1.0f, 1.0f);
+            }
+            if (KeyboardState.IsKeyPressed(Keys.D4))
+            {
+                _currentTexture = 0;
+                _pyramidColor.X = (_pyramidColor.X + 0.1f) % 1.0f;
+            }
+            if (KeyboardState.IsKeyPressed(Keys.D5))
+            {
+                _currentTexture = 0;
+                _pyramidColor.Y = (_pyramidColor.Y + 0.1f) % 1.0f;
+            }
+            if (KeyboardState.IsKeyPressed(Keys.D6))
+            {
+                _currentTexture = 0;
+                _pyramidColor.Z = (_pyramidColor.Z + 0.1f) % 1.0f;
+            }
+
+            if (KeyboardState.IsKeyDown(Keys.Escape))
+                Close();
+        }
+
+        protected override void OnUnload()
+        {
+            GL.DeleteBuffer(_vbo);
+            GL.DeleteBuffer(_ebo);
+            GL.DeleteVertexArray(_vao);
+            GL.DeleteProgram(_program);
+            if (_textureBrick != -1) GL.DeleteTexture(_textureBrick);
+            if (_textureEarth != -1) GL.DeleteTexture(_textureEarth);
+            if (_textureClouds != -1) GL.DeleteTexture(_textureClouds);
+            base.OnUnload();
+        }
+
+        public static void Main()
+        {
+            var gameWindowSettings = GameWindowSettings.Default;
+            var nativeWindowSettings = new NativeWindowSettings
+            {
+                Size = new Vector2i(800, 600),
+                Title = "Textured Pyramid"
+            };
+
+            using (var window = new PyramidWindow(gameWindowSettings, nativeWindowSettings))
+            {
+                window.Run();
+            }
+        }
+    }
+}
