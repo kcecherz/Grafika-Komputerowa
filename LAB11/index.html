@@ -123,7 +123,7 @@ function changeShape() {
                 gl.enableVertexAttribArray(a_color_loc);
             } else {
                 gl.disableVertexAttribArray(a_color_loc);
-                gl.vertexAttrib3f(a_color_loc, 0.0, 0.0, 1.0) // Zmieniono kolor na niebieski
+                gl.vertexAttrib3f(a_color_loc, 0.0, 0.0, 1.0) 
             }
 
             gl.drawArrays(gl.POINTS, 0, POINT_COUNT);
@@ -226,7 +226,7 @@ function changeShape() {
                 0,
                 0);
 
-            gl.clearColor(0.7, 0.7, 0.7, 1); // Zmieniono kolor tła na popielaty (RGB: 0.7, 0.7, 0.7)
+            gl.clearColor(0.7, 0.7, 0.7, 1); 
 
             if (gl.getError() != gl.NO_ERROR) {
                 console.log("During initialization, a GL error has been detected.");
